@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>{{ project.title }} - Details</title>
+  
+  <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+
+<body class="portfolio-details-page">
+
+  <main class="main">
+
+    <div class="page-title light-background">
+      <div class="container">
+        <nav class="breadcrumbs">
+          <ol>
+            <li><a href="/">Home</a></li>
+            <li class="current">Project Details</li>
+          </ol>
+        </nav>
+        <h1>{{ project.title }}</h1>
+      </div>
+    </div>
+
+    <section id="portfolio-details" class="portfolio-details section">
+      <div class="container">
+        <div class="row gy-5">
+
+          <div class="col-lg-8">
+            <div class="portfolio-details-slider">
+               <img src="{{ url_for('static', filename='uploads/' + project.image) }}" alt="{{ project.title }}" class="img-fluid rounded shadow-sm">
+            </div>
+
+            <div class="portfolio-description mt-4">
+              <h2>Project Description</h2>
+              <p>
+                {{ project.description }}
+              </p>
+
+              {% if project.report %}
+              <h3 class="mt-5">Project Report</h3>
+              <p>View the detailed project documentation below.</p>
+              
+              <div class="ratio ratio-16x9" style="min-height: 500px; border: 1px solid #ccc;">
+                <iframe src="{{ url_for('static', filename='reports/' + project.report) }}" title="Project Report" allowfullscreen></iframe>
+              </div>
+              
+              <div class="mt-3 text-center">
+                  <a href="{{ url_for('static', filename='reports/' + project.report) }}" class="btn btn-primary" download>
+                      <i class="bi bi-download"></i> Download Full Report
+                  </a>
+              </div>
+              {% else %}
+              <div class="alert alert-warning mt-5">
+                  <i class="bi bi-exclamation-triangle"></i> No detailed report attached for this project yet.
+              </div>
+              {% endif %}
+
+            </div>
+          </div>
+
+          <div class="col-lg-4">
+            <div class="portfolio-info" style="padding: 30px; box-shadow: 0px 0 30px rgba(0, 0, 0, 0.08);">
+              <h3>Project Information</h3>
+              <ul>
+                <li><strong>Category</strong>: {{ project.category }}</li>
+                <li><strong>Tech Stack</strong>: HTML, CSS, JavaScript, Python (Flask)</li>
+                <li><strong>Status</strong>: Completed</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
+
+</body>
+</html>

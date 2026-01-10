@@ -1,0 +1,25 @@
+{
+    "certificates": [
+        {
+            "title": "Bronze Medals - 400",
+            "image": "bronz_400.jpg"
+        }
+    ],
+    "projects": [
+        {
+            "title": "Database Management System",
+            "category": "Desktop Application",
+            "description": "A comprehensive Database Management System built using Python and SQL. Features a user-friendly GUI developed with Tkinter for seamless data interaction. Key technical highlights include database normalization, secure data manipulation, and optimized query performance for efficient storage and retrieval.",
+            "image": "dbms.jpg",
+            "report": "dbms_report.pdf"
+        },
+        {
+            "title": "Blood Bank & Donor Management System",
+            "category": "Web Application",
+            "description": "A web-based application built using Python (Flask) and SQLite to automate blood stock management. It bridges the gap between donors and patients by providing features like secure admin login, donor registration, real-time blood availability status, and patient request handling.",
+            "image": "blood_donation.jpg",
+            "report": ""
+        }
+    ],
+    "visitors": 7
+}
