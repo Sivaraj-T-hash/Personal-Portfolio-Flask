@@ -78,8 +78,11 @@ def login():
     username = request.form['username']
     password = request.form['password']
     
-    valid_user = os.getenv('ADMIN_USERNAME')
-    valid_pass = os.getenv('ADMIN_PASSWORD')
+    # Updated credentials
+    # Username: admin
+    # Password: Sivaraj9677
+    valid_user = os.getenv('ADMIN_USERNAME', 'admin') 
+    valid_pass = os.getenv('ADMIN_PASSWORD', 'Sivaraj9677')
 
     if username == valid_user and password == valid_pass:
         session['logged_in'] = True
