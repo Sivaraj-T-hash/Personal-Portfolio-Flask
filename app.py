@@ -1,3 +1,5 @@
+import cloudinary
+import cloudinary.uploader
 import os
 import json
 from flask import Flask, render_template, request, redirect, url_for, session, flash
@@ -5,24 +7,24 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
+
 # --- FIX FOR LOCALHOST LOGIN ---
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 # -------------------------------
 
-# Configuration
-UPLOAD_FOLDER = 'assets/uploads'
-REPORT_FOLDER = 'assets/reports'  # NEW: Folder for PDF reports
+# --- CLOUDINARY CONFIGURATION (ACTION REQUIRED) ---
+cloudinary.config(
+    cloud_name = "doqgziycf", 
+    api_key = "636344164192868", 
+    api_secret = "gMBO2pdLflJByR1IFqhcZDG8M1M",
+    secure = True
+)
+# --------------------------------------------------
+
 DATA_FILE = 'data.json'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'pdf'} # Added PDF
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['REPORT_FOLDER'] = REPORT_FOLDER
-
-# Ensure folders exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['REPORT_FOLDER'], exist_ok=True)
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -33,7 +35,6 @@ def load_data():
     with open(DATA_FILE, 'r') as f:
         try:
             data = json.load(f)
-            # Ensure both keys exist even if file is old
             if "certificates" not in data: data["certificates"] = []
             if "projects" not in data: data["projects"] = []
             return data
@@ -46,24 +47,17 @@ def save_data(data):
 
 # --- ROUTES ---
 
-
 @app.route('/')
 def index():
     data = load_data()
     
     # --- VISITOR COUNTER LOGIC ---
-    # If 'visitors' doesn't exist, start at 0
     current_visitors = data.get('visitors', 0)
-    
-    # Add 1 to the count
     new_count = current_visitors + 1
-    
-    # Save it back to data.json
     data['visitors'] = new_count
     save_data(data)
     # -----------------------------
 
-    # Pass the 'visitors' number to the HTML page
     return render_template('index.html', 
                            certificates=data['certificates'], 
                            projects=data['projects'],
@@ -80,18 +74,16 @@ def admin():
                            projects=data['projects'])
 
 @app.route('/login', methods=['POST'])
-# --- UPDATE THIS BLOCK IN app.py ---
-
-@app.route('/login', methods=['POST'])
 def login():
     username = request.form['username']
     password = request.form['password']
     
-    # Load credentials from .env file
-    valid_user = os.getenv('ADMIN_USERNAME')
-    valid_pass = os.getenv('ADMIN_PASSWORD')
+    # Updated credentials
+    # Username: admin
+    # Password: Sivaraj9677
+    valid_user = os.getenv('ADMIN_USERNAME', 'admin') 
+    valid_pass = os.getenv('ADMIN_PASSWORD', 'Sivaraj9677')
 
-    # Check if the typed email and password match the .env file
     if username == valid_user and password == valid_pass:
         session['logged_in'] = True
         return redirect(url_for('admin'))
@@ -103,7 +95,7 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('index'))
 
-# --- CERTIFICATE UPLOAD ---
+# --- CERTIFICATE UPLOAD (UPDATED FOR CLOUDINARY) ---
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
     if 'logged_in' not in session: return redirect(url_for('admin'))
@@ -112,11 +104,14 @@ def add_certificate():
     file = request.files['image']
 
     if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        # Upload to Cloudinary
+        upload_result = cloudinary.uploader.upload(file)
+        # Get the URL of the uploaded image
+        image_url = upload_result["secure_url"]
         
         data = load_data()
-        data['certificates'].append({"title": title, "image": filename})
+        # Save the URL instead of the filename
+        data['certificates'].append({"title": title, "image": image_url})
         save_data(data)
         
     return redirect(url_for('admin'))
@@ -126,33 +121,33 @@ def delete_certificate(index):
     if 'logged_in' not in session: return redirect(url_for('admin'))
     data = load_data()
     if 0 <= index < len(data['certificates']):
-        # Optional: Delete actual file here
         data['certificates'].pop(index)
         save_data(data)
     return redirect(url_for('admin'))
 
-# --- NEW: PROJECT UPLOAD ---
+# --- PROJECT UPLOAD (UPDATED FOR CLOUDINARY) ---
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('admin'))
     
     title = request.form['title']
-    category = request.form['category'] # e.g., Web App, Database
+    category = request.form['category'] 
     description = request.form['description']
     
-    # Handle Image
+    # Handle Image Upload
     img_file = request.files['image']
-    img_filename = ""
+    img_url = "" # Default to empty if no image
     if img_file and allowed_file(img_file.filename):
-        img_filename = secure_filename(img_file.filename)
-        img_file.save(os.path.join(app.config['UPLOAD_FOLDER'], img_filename))
+        upload_result = cloudinary.uploader.upload(img_file)
+        img_url = upload_result["secure_url"]
 
-    # Handle Report (PDF) - Optional
+    # Handle Report (PDF) Upload
     report_file = request.files['report']
-    report_filename = ""
+    report_url = "" # Default to empty if no report
     if report_file and allowed_file(report_file.filename):
-        report_filename = secure_filename(report_file.filename)
-        report_file.save(os.path.join(app.config['REPORT_FOLDER'], report_filename))
+        # Cloudinary handles PDFs automatically too!
+        report_result = cloudinary.uploader.upload(report_file, resource_type="auto")
+        report_url = report_result["secure_url"]
 
     # Save to JSON
     data = load_data()
@@ -160,8 +155,8 @@ def add_project():
         "title": title,
         "category": category,
         "description": description,
-        "image": img_filename,
-        "report": report_filename # This might be empty string "" if no report uploaded
+        "image": img_url,   # Now storing the Cloudinary URL
+        "report": report_url # Now storing the Cloudinary URL
     })
     save_data(data)
         
@@ -175,18 +170,16 @@ def delete_project(index):
         data['projects'].pop(index)
         save_data(data)
     return redirect(url_for('admin'))
-# --- NEW: DYNAMIC PROJECT DETAILS PAGE ---
+
 @app.route('/project/<int:id>')
 def project_details(id):
     data = load_data()
     projects = data.get('projects', [])
     
-    # Check if the project exists
     if 0 <= id < len(projects):
         project = projects[id]
         return render_template('project_details.html', project=project)
     
-    # If not found, go back home
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
