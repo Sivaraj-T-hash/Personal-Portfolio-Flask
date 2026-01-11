@@ -16,3 +16,5 @@ SQLAlchemy==2.0.45
 typing_extensions==4.15.0
 Werkzeug==3.1.4
 cloudinary
+pymongo
+certifi
