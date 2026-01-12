@@ -1,7 +1,7 @@
 import os
 import cloudinary
 import cloudinary.uploader
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session
 from pymongo import MongoClient
 import certifi
 from bson.objectid import ObjectId
@@ -17,7 +17,6 @@ db = client['portfolio_db']
 certificates_col = db['certificates']
 projects_col = db['projects']
 visitors_col = db['visitors']
-# -----------------------------
 
 # --- 2. CLOUDINARY CONFIG ---
 cloudinary.config(
@@ -26,40 +25,43 @@ cloudinary.config(
     api_secret = "gMBO2pdLflJByR1IFqhcZDG8M1M",
     secure = True
 )
-# ----------------------------
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
-    # Visitor Counter
-    visitor_data = visitors_col.find_one_and_update(
-        {'_id': 'site_stats'},
-        {'$inc': {'count': 1}},
-        upsert=True,
-        return_document=True
-    )
-    total_views = visitor_data['count']
+    try:
+        # Visitor Counter
+        visitor_data = visitors_col.find_one_and_update(
+            {'_id': 'site_stats'},
+            {'$inc': {'count': 1}},
+            upsert=True,
+            return_document=True
+        )
+        # Handle older pymongo versions where return_document might behave differently
+        if visitor_data:
+            total_views = visitor_data['count']
+        else:
+            total_views = 0
 
-    # Fetch Data
-    certificates = list(certificates_col.find().sort('position', 1))
-    projects = list(projects_col.find().sort('position', 1))
-    
-    return render_template('index.html', 
-                           certificates=certificates, 
-                           projects=projects,
-                           visitors=total_views)
+        # Fetch Data
+        certificates = list(certificates_col.find().sort('position', 1))
+        projects = list(projects_col.find().sort('position', 1))
+        
+        return render_template('index.html', 
+                               certificates=certificates, 
+                               projects=projects,
+                               visitors=total_views)
+    except Exception as e:
+        # THIS WILL PRINT THE ERROR ON YOUR SCREEN
+        return f"<h1 style='color:red;'>Error Found:</h1><p>{str(e)}</p>"
 
 @app.route('/admin')
 def admin():
     if 'logged_in' not in session: return render_template('admin_login.html')
-    
     certificates = list(certificates_col.find().sort('position', 1))
     projects = list(projects_col.find().sort('position', 1))
-    
-    return render_template('admin.html', 
-                           certificates=certificates, 
-                           projects=projects)
+    return render_template('admin.html', certificates=certificates, projects=projects)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -67,7 +69,6 @@ def login():
     password = request.form['password']
     valid_user = os.getenv('ADMIN_USERNAME', 'admin') 
     valid_pass = os.getenv('ADMIN_PASSWORD', 'Sivaraj9677')
-
     if username == valid_user and password == valid_pass:
         session['logged_in'] = True
         return redirect(url_for('admin'))
@@ -79,7 +80,6 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('index'))
 
-# --- CERTIFICATES ---
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
     if 'logged_in' not in session: return redirect(url_for('login'))
@@ -88,9 +88,7 @@ def add_certificate():
     if image:
         upload_result = cloudinary.uploader.upload(image)
         certificates_col.insert_one({
-            'title': title, 
-            'image': upload_result['secure_url'], 
-            'position': 0 
+            'title': title, 'image': upload_result['secure_url'], 'position': 0 
         })
     return redirect(url_for('admin'))
 
@@ -100,39 +98,24 @@ def delete_certificate(id):
     certificates_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
-# --- PROJECTS (With Description & Report) ---
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
-
     title = request.form['title']
     category = request.form['category']
-    description = request.form.get('description', '') # Safe get
-    
+    description = request.form.get('description', '')
     image = request.files['image']
     report = request.files['report']
-
     if image:
-        # Upload Image
-        image_upload = cloudinary.uploader.upload(image)
-        image_url = image_upload['secure_url']
-
-        # Upload Report (Optional)
+        upload_result = cloudinary.uploader.upload(image)
         report_url = ""
         if report:
-            report_upload = cloudinary.uploader.upload(report, resource_type="auto")
-            report_url = report_upload['secure_url']
-        
-        # Save to DB
+            report_res = cloudinary.uploader.upload(report, resource_type="auto")
+            report_url = report_res['secure_url']
         projects_col.insert_one({
-            'title': title,
-            'category': category,
-            'description': description,
-            'image': image_url,
-            'report': report_url,
-            'position': 0
+            'title': title, 'category': category, 'description': description,
+            'image': upload_result['secure_url'], 'report': report_url, 'position': 0
         })
-
     return redirect(url_for('admin'))
 
 @app.route('/delete_project/<string:id>')
@@ -141,7 +124,6 @@ def delete_project(id):
     projects_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
-# --- REORDER LOGIC ---
 @app.route('/reorder', methods=['POST'])
 def reorder():
     if 'logged_in' not in session: return "Unauthorized", 401
@@ -151,7 +133,6 @@ def reorder():
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
 
-# --- PROJECT DETAILS PAGE ---
 @app.route('/project/<int:index>')
 def project_details(index):
     projects = list(projects_col.find().sort('position', 1))
