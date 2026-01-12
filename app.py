@@ -1,86 +1,63 @@
+import os
 import cloudinary
 import cloudinary.uploader
-import os
-import json
-from flask import Flask, render_template, request, redirect, url_for, session, flash
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for, session
+from pymongo import MongoClient # ADDED
+import certifi # ADDED
+from bson.objectid import ObjectId # ADDED
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
 
-# --- FIX FOR LOCALHOST LOGIN ---
-app.config['SESSION_COOKIE_SECURE'] = False
-app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# -------------------------------
+# --- 1. MONGODB CONNECTION (THE MISSING PART) ---
+# I added your correct password with the special %40 symbol
+MONGO_URI = "mongodb+srv://admin:Sivaraj%409677@cluster0.bisuniq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+db = client['portfolio_db'] # The database name
+certificates_col = db['certificates'] # The collection for certificates
+projects_col = db['projects'] # The collection for projects
+# -----------------------------------------------
 
-# --- CLOUDINARY CONFIGURATION (ACTION REQUIRED) ---
+# --- CLOUDINARY CONFIGURATION ---
 cloudinary.config(
     cloud_name = "doqgziycf", 
     api_key = "636344164192868", 
     api_secret = "gMBO2pdLflJByR1IFqhcZDG8M1M",
     secure = True
 )
-# --------------------------------------------------
-
-DATA_FILE = 'data.json'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp', 'pdf'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        return {"certificates": [], "projects": []}
-    with open(DATA_FILE, 'r') as f:
-        try:
-            data = json.load(f)
-            if "certificates" not in data: data["certificates"] = []
-            if "projects" not in data: data["projects"] = []
-            return data
-        except:
-            return {"certificates": [], "projects": []}
-
-def save_data(data):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(data, f, indent=4)
+# --------------------------------
 
 # --- ROUTES ---
 
 @app.route('/')
 def index():
-    data = load_data()
+    # FETCH FROM MONGODB (Sorted by position)
+    certificates = list(certificates_col.find().sort('position', 1))
+    projects = list(projects_col.find().sort('position', 1))
     
-    # --- VISITOR COUNTER LOGIC ---
-    current_visitors = data.get('visitors', 0)
-    new_count = current_visitors + 1
-    data['visitors'] = new_count
-    save_data(data)
-    # -----------------------------
-
     return render_template('index.html', 
-                           certificates=data['certificates'], 
-                           projects=data['projects'],
-                           visitors=new_count)
+                           certificates=certificates, 
+                           projects=projects)
 
-@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/admin')
 def admin():
     if 'logged_in' not in session:
         return render_template('admin_login.html')
     
-    data = load_data()
+    # FETCH FROM MONGODB
+    certificates = list(certificates_col.find().sort('position', 1))
+    projects = list(projects_col.find().sort('position', 1))
+    
     return render_template('admin.html', 
-                           certificates=data['certificates'], 
-                           projects=data['projects'])
+                           certificates=certificates, 
+                           projects=projects)
 
 @app.route('/login', methods=['POST'])
 def login():
     username = request.form['username']
     password = request.form['password']
     
-    # Updated credentials
-    # Username: admin
-    # Password: Sivaraj9677
+    # Your Credentials
     valid_user = os.getenv('ADMIN_USERNAME', 'admin') 
     valid_pass = os.getenv('ADMIN_PASSWORD', 'Sivaraj9677')
 
@@ -95,92 +72,108 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('index'))
 
-# --- CERTIFICATE UPLOAD (UPDATED FOR CLOUDINARY) ---
+# --- ADD CERTIFICATE (Saves to MongoDB) ---
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
-    if 'logged_in' not in session: return redirect(url_for('admin'))
-    
-    title = request.form['title']
-    file = request.files['image']
+    if 'logged_in' not in session: return redirect(url_for('login'))
 
-    if file and allowed_file(file.filename):
+    title = request.form['title']
+    image = request.files['image']
+
+    if image:
         # Upload to Cloudinary
-        upload_result = cloudinary.uploader.upload(file)
-        # Get the URL of the uploaded image
-        image_url = upload_result["secure_url"]
+        upload_result = cloudinary.uploader.upload(image)
+        image_url = upload_result['secure_url']
         
-        data = load_data()
-        # Save the URL instead of the filename
-        data['certificates'].append({"title": title, "image": image_url})
-        save_data(data)
+        # Save to MongoDB
+        certificates_col.insert_one({
+            'title': title,
+            'image': image_url,
+            'position': 0 
+        })
         
     return redirect(url_for('admin'))
 
+# --- DELETE CERTIFICATE (Fixed for MongoDB) ---
 @app.route('/delete_certificate/<int:index>')
 def delete_certificate(index):
     if 'logged_in' not in session: return redirect(url_for('admin'))
-    data = load_data()
-    if 0 <= index < len(data['certificates']):
-        data['certificates'].pop(index)
-        save_data(data)
-    return redirect(url_for('admin'))
-
-# --- PROJECT UPLOAD (UPDATED FOR CLOUDINARY) ---
-@app.route('/add_project', methods=['POST'])
-def add_project():
-    if 'logged_in' not in session: return redirect(url_for('admin'))
     
-    title = request.form['title']
-    category = request.form['category'] 
-    description = request.form['description']
-    
-    # Handle Image Upload
-    img_file = request.files['image']
-    img_url = "" # Default to empty if no image
-    if img_file and allowed_file(img_file.filename):
-        upload_result = cloudinary.uploader.upload(img_file)
-        img_url = upload_result["secure_url"]
-
-    # Handle Report (PDF) Upload
-    report_file = request.files['report']
-    report_url = "" # Default to empty if no report
-    if report_file and allowed_file(report_file.filename):
-        # Cloudinary handles PDFs automatically too!
-        report_result = cloudinary.uploader.upload(report_file, resource_type="auto")
-        report_url = report_result["secure_url"]
-
-    # Save to JSON
-    data = load_data()
-    data['projects'].append({
-        "title": title,
-        "category": category,
-        "description": description,
-        "image": img_url,   # Now storing the Cloudinary URL
-        "report": report_url # Now storing the Cloudinary URL
-    })
-    save_data(data)
+    # Get all certs, find the one at this index, and delete it by ID
+    all_certs = list(certificates_col.find().sort('position', 1))
+    if 0 <= index < len(all_certs):
+        cert_to_delete = all_certs[index]
+        certificates_col.delete_one({'_id': cert_to_delete['_id']})
         
     return redirect(url_for('admin'))
 
+# --- ADD PROJECT (Saves to MongoDB) ---
+@app.route('/add_project', methods=['POST'])
+def add_project():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+
+    title = request.form['title']
+    category = request.form['category']
+    image = request.files['image']
+    # description = request.form['description'] # Add this line if you use descriptions
+
+    if image:
+        upload_result = cloudinary.uploader.upload(image)
+        image_url = upload_result['secure_url']
+        
+        # Save to MongoDB
+        projects_col.insert_one({
+            'title': title,
+            'category': category,
+            'image': image_url,
+            # 'description': description,
+            'position': 0
+        })
+
+    return redirect(url_for('admin'))
+
+# --- DELETE PROJECT (Fixed for MongoDB) ---
 @app.route('/delete_project/<int:index>')
 def delete_project(index):
     if 'logged_in' not in session: return redirect(url_for('admin'))
-    data = load_data()
-    if 0 <= index < len(data['projects']):
-        data['projects'].pop(index)
-        save_data(data)
+    
+    all_projects = list(projects_col.find().sort('position', 1))
+    if 0 <= index < len(all_projects):
+        proj_to_delete = all_projects[index]
+        projects_col.delete_one({'_id': proj_to_delete['_id']})
+        
     return redirect(url_for('admin'))
 
+# --- PROJECT DETAILS (Fixed for MongoDB) ---
 @app.route('/project/<int:id>')
 def project_details(id):
-    data = load_data()
-    projects = data.get('projects', [])
+    # Fetch all projects to match the index from the URL
+    projects = list(projects_col.find().sort('position', 1))
     
     if 0 <= id < len(projects):
         project = projects[id]
         return render_template('project_details.html', project=project)
     
     return redirect(url_for('index'))
+
+# --- REORDER LOGIC (From previous step) ---
+@app.route('/reorder', methods=['POST'])
+def reorder():
+    if 'logged_in' not in session: return "Unauthorized", 401
+    
+    data = request.get_json()
+    collection_name = data.get('collection') 
+    new_order = data.get('order') 
+    
+    if collection_name == 'certificates':
+        collection = certificates_col
+    else:
+        collection = projects_col
+    
+    for index, item_id in enumerate(new_order):
+        collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
+        
+    return "OK", 200
 
 if __name__ == '__main__':
     app.run(debug=True)
