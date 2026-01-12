@@ -9,30 +9,30 @@ from bson.objectid import ObjectId
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
 
-# --- MONGODB CONNECTION ---
-# Using the connection string you found earlier
+# --- 1. MONGODB CONNECTION ---
 MONGO_URI = "mongodb+srv://admin:Sivaraj9677@cluster0.bisuniq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['portfolio_db']
 
 certificates_col = db['certificates']
 projects_col = db['projects']
-visitors_col = db['visitors'] # New collection for counting views
-# --------------------------
+visitors_col = db['visitors']
+# -----------------------------
 
-# --- CLOUDINARY CONFIG ---
+# --- 2. CLOUDINARY CONFIG ---
 cloudinary.config(
     cloud_name = "doqgziycf", 
     api_key = "636344164192868", 
     api_secret = "gMBO2pdLflJByR1IFqhcZDG8M1M",
     secure = True
 )
-# -------------------------
+# ----------------------------
+
+# --- ROUTES ---
 
 @app.route('/')
 def index():
-    # 1. VISITOR COUNTER (Total Views)
-    # This finds the counter and adds +1. If it doesn't exist, it creates it.
+    # Visitor Counter
     visitor_data = visitors_col.find_one_and_update(
         {'_id': 'site_stats'},
         {'$inc': {'count': 1}},
@@ -41,7 +41,7 @@ def index():
     )
     total_views = visitor_data['count']
 
-    # 2. FETCH DATA (Sorted by position)
+    # Fetch Data
     certificates = list(certificates_col.find().sort('position', 1))
     projects = list(projects_col.find().sort('position', 1))
     
@@ -79,6 +79,7 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('index'))
 
+# --- CERTIFICATES ---
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
     if 'logged_in' not in session: return redirect(url_for('login'))
@@ -87,7 +88,9 @@ def add_certificate():
     if image:
         upload_result = cloudinary.uploader.upload(image)
         certificates_col.insert_one({
-            'title': title, 'image': upload_result['secure_url'], 'position': 0 
+            'title': title, 
+            'image': upload_result['secure_url'], 
+            'position': 0 
         })
     return redirect(url_for('admin'))
 
@@ -97,30 +100,30 @@ def delete_certificate(id):
     certificates_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
+# --- PROJECTS (With Description & Report) ---
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
 
     title = request.form['title']
     category = request.form['category']
-    description = request.form['description'] # NEW: Description
+    description = request.form.get('description', '') # Safe get
     
-    image = request.files['image'] # This is the "Reference Image"
-    report = request.files['report'] # NEW: Report File
+    image = request.files['image']
+    report = request.files['report']
 
     if image:
-        # 1. Upload Image
+        # Upload Image
         image_upload = cloudinary.uploader.upload(image)
         image_url = image_upload['secure_url']
 
-        # 2. Upload Report (if provided)
+        # Upload Report (Optional)
         report_url = ""
         if report:
-            # resource_type="auto" lets you upload PDFs, Docs, etc.
             report_upload = cloudinary.uploader.upload(report, resource_type="auto")
             report_url = report_upload['secure_url']
         
-        # 3. Save to MongoDB
+        # Save to DB
         projects_col.insert_one({
             'title': title,
             'category': category,
@@ -147,17 +150,15 @@ def reorder():
     for index, item_id in enumerate(data.get('order')):
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
+
+# --- PROJECT DETAILS PAGE ---
 @app.route('/project/<int:index>')
 def project_details(index):
-    # Fetch all projects sorted by position
     projects = list(projects_col.find().sort('position', 1))
-    
-    # Check if the index is valid
     if 0 <= index < len(projects):
         project = projects[index]
         return render_template('project_details.html', project=project)
-    
-    # If project not found, go back home
     return redirect(url_for('index'))
+
 if __name__ == '__main__':
     app.run(debug=True)
