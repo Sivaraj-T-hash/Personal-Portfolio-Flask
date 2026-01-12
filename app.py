@@ -126,6 +126,17 @@ def reorder():
     for index, item_id in enumerate(data.get('order')):
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
-
+@app.route('/project/<int:index>')
+def project_details(index):
+    # Fetch all projects sorted by position
+    projects = list(projects_col.find().sort('position', 1))
+    
+    # Check if the index is valid
+    if 0 <= index < len(projects):
+        project = projects[index]
+        return render_template('project_details.html', project=project)
+    
+    # If project not found, go back home
+    return redirect(url_for('index'))
 if __name__ == '__main__':
     app.run(debug=True)
