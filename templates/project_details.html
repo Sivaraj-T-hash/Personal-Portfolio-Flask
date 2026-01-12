@@ -7,42 +7,76 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
+        /* --- DARK MODE STYLES --- */
+        body {
+            background-color: #000000 !important; /* Pure Black Background */
+            color: #ffffff !important;
+            font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .card {
+            background-color: #111111; /* Very Dark Grey Card */
+            border: 1px solid #333;
+            color: #ffffff;
+        }
+        .text-secondary {
+            color: #b0b0b0 !important; /* Light Grey Text */
+        }
+        .text-muted {
+            color: #888 !important;
+        }
+        .btn-outline-light {
+            border-color: #555;
+            color: #ddd;
+        }
+        .btn-outline-light:hover {
+            background-color: #333;
+            color: #fff;
+        }
+        /* Image Header Style */
         .project-img-header {
             width: 100%;
-            height: 400px;
+            height: 450px;
             object-fit: cover;
             border-top-left-radius: var(--bs-border-radius-xl) !important;
             border-top-right-radius: var(--bs-border-radius-xl) !important;
+            border-bottom: 1px solid #222;
         }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
     <div class="container py-5">
         <div class="row justify-content-center">
-            <div class="col-lg-8">
-                <div class="card shadow-lg border-0 rounded-4">
+            <div class="col-lg-10">
+                <div class="card shadow-lg rounded-4">
+                    
                     <img src="{{ project.image }}" class="project-img-header" alt="{{ project.title }}">
                     
                     <div class="card-body p-5">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h1 class="fw-bold mb-0">{{ project.title }}</h1>
-                            <span class="badge bg-primary fs-6">{{ project.category }}</span>
+                        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                            <h1 class="fw-bold mb-0 display-6">{{ project.title }}</h1>
+                            <span class="badge bg-primary fs-6 px-3 py-2 rounded-pill">{{ project.category }}</span>
                         </div>
 
-                        <h5 class="text-muted mb-3">Description</h5>
-                        <p class="lead text-secondary">{{ project.description }}</p>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <h5 class="text-uppercase text-muted fs-6 fw-bold mb-3">Project Overview</h5>
+                                <p class="lead text-secondary" style="line-height: 1.8;">
+                                    {{ project.description }}
+                                </p>
+                            </div>
+                        </div>
 
-                        <hr class="my-4">
+                        <hr class="my-5" style="border-color: #333;">
 
-                        <div class="d-flex gap-3">
-                            <a href="/" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Back to Home
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="/" class="btn btn-outline-light px-4 py-2 rounded-pill">
+                                <i class="bi bi-arrow-left me-2"></i> Back to Portfolio
                             </a>
 
                             {% if project.report %}
-                            <a href="{{ project.report }}" target="_blank" class="btn btn-danger">
-                                <i class="bi bi-file-earmark-pdf-fill"></i> Download Report
+                            <a href="{{ project.report }}" target="_blank" class="btn btn-danger px-4 py-2 rounded-pill">
+                                <i class="bi bi-file-earmark-pdf-fill me-2"></i> Download Report
                             </a>
                             {% endif %}
                         </div>
