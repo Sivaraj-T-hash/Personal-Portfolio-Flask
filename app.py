@@ -38,7 +38,6 @@ def index():
             upsert=True,
             return_document=True
         )
-        # Handle older pymongo versions where return_document might behave differently
         if visitor_data:
             total_views = visitor_data['count']
         else:
@@ -53,7 +52,6 @@ def index():
                                projects=projects,
                                visitors=total_views)
     except Exception as e:
-        # THIS WILL PRINT THE ERROR ON YOUR SCREEN
         return f"<h1 style='color:red;'>Error Found:</h1><p>{str(e)}</p>"
 
 @app.route('/admin')
@@ -133,11 +131,13 @@ def reorder():
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
 
-@app.route('/project/<int:index>')
-def project_details(index):
+# --- THE FIX IS HERE ---
+# We changed <int:index> to <int:id> to match your HTML
+@app.route('/project/<int:id>')
+def project_details(id):
     projects = list(projects_col.find().sort('position', 1))
-    if 0 <= index < len(projects):
-        project = projects[index]
+    if 0 <= id < len(projects):
+        project = projects[id]
         return render_template('project_details.html', project=project)
     return redirect(url_for('index'))
 
