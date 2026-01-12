@@ -100,15 +100,36 @@ def delete_certificate(id):
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
+
     title = request.form['title']
     category = request.form['category']
-    image = request.files['image']
+    description = request.form['description'] # NEW: Description
+    
+    image = request.files['image'] # This is the "Reference Image"
+    report = request.files['report'] # NEW: Report File
+
     if image:
-        upload_result = cloudinary.uploader.upload(image)
+        # 1. Upload Image
+        image_upload = cloudinary.uploader.upload(image)
+        image_url = image_upload['secure_url']
+
+        # 2. Upload Report (if provided)
+        report_url = ""
+        if report:
+            # resource_type="auto" lets you upload PDFs, Docs, etc.
+            report_upload = cloudinary.uploader.upload(report, resource_type="auto")
+            report_url = report_upload['secure_url']
+        
+        # 3. Save to MongoDB
         projects_col.insert_one({
-            'title': title, 'category': category, 
-            'image': upload_result['secure_url'], 'position': 0
+            'title': title,
+            'category': category,
+            'description': description,
+            'image': image_url,
+            'report': report_url,
+            'position': 0
         })
+
     return redirect(url_for('admin'))
 
 @app.route('/delete_project/<string:id>')
