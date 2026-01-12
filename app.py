@@ -11,7 +11,7 @@ app.secret_key = 'super_secret_key'
 
 # --- 1. MONGODB CONNECTION (THE MISSING PART) ---
 # I added your correct password with the special %40 symbol
-MONGO_URI = "mongodb+srv://admin:Sivaraj%409677@cluster0.bisuniq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+MONGO_URI = "mongodb+srv://admin:Sivaraj9677@cluster0.bisuniq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['portfolio_db'] # The database name
 certificates_col = db['certificates'] # The collection for certificates
