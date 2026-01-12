@@ -48,39 +48,46 @@
         </div>
 
         <div class="card shadow mb-4">
-    <div class="card-header"><h5>Manage Projects (Drag to Reorder)</h5></div>
-    <div class="card-body">
-        <form action="/add_project" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-3 mb-4">
-            
-            <div class="row">
-                <div class="col-md-6">
-                    <input type="text" name="title" class="form-control" placeholder="Project Title" required>
-                </div>
-                <div class="col-md-6">
-                    <input type="text" name="category" class="form-control" placeholder="Category (e.g., Web App)" required>
-                </div>
+            <div class="card-header"><h5>Manage Projects (Drag to Reorder)</h5></div>
+            <div class="card-body">
+                <form action="/add_project" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-3 mb-4">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <input type="text" name="title" class="form-control" placeholder="Project Title" required>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" name="category" class="form-control" placeholder="Category (e.g., Web App)" required>
+                        </div>
+                    </div>
+                    <textarea name="description" class="form-control" rows="3" placeholder="Project Description..."></textarea>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Reference Image</label>
+                            <input type="file" name="image" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted">Project Report (PDF/Doc)</label>
+                            <input type="file" name="report" class="form-control">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Add Project</button>
+                </form>
+
+                <table class="table align-middle">
+                    <thead><tr><th>Image</th><th>Title</th><th>Category</th><th>Action</th></tr></thead>
+                    <tbody id="project-list">
+                        {% for project in projects %}
+                        <tr data-id="{{ project._id }}" class="draggable-item">
+                            <td><img src="{{ project.image }}" class="img-thumbnail"></td>
+                            <td>{{ project.title }}</td>
+                            <td>{{ project.category }}</td>
+                            <td><a href="/delete_project/{{ project._id }}" class="btn btn-sm btn-danger">Delete</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-
-            <textarea name="description" class="form-control" rows="3" placeholder="Project Description..."></textarea>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <label class="form-label text-muted">Reference Image</label>
-                    <input type="file" name="image" class="form-control" required>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label text-muted">Project Report (PDF/Doc)</label>
-                    <input type="file" name="report" class="form-control">
-                </div>
-            </div>
-
-            <button type="submit" class="btn btn-success w-100">Add Project</button>
-        </form>
-
-        <table class="table align-middle">
-            </table>
-    </div>
-</div>
+        </div>
     </div>
 
     <script>
