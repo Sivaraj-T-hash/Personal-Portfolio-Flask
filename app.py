@@ -19,6 +19,7 @@ projects_col = db['projects']
 visitors_col = db['visitors']
 
 # --- 2. CLOUDINARY CONFIG ---
+# Make sure these are YOUR correct keys!
 cloudinary.config(
     cloud_name = "doqgziycf", 
     api_key = "636344164192868", 
@@ -38,10 +39,7 @@ def index():
             upsert=True,
             return_document=True
         )
-        if visitor_data:
-            total_views = visitor_data['count']
-        else:
-            total_views = 0
+        total_views = visitor_data['count'] if visitor_data else 0
 
         # Fetch Data
         certificates = list(certificates_col.find().sort('position', 1))
@@ -52,7 +50,7 @@ def index():
                                projects=projects,
                                visitors=total_views)
     except Exception as e:
-        return f"<h1 style='color:red;'>Error Found:</h1><p>{str(e)}</p>"
+        return f"<h1 style='color:red'>Database Error:</h1><p>{e}</p>"
 
 @app.route('/admin')
 def admin():
@@ -65,9 +63,8 @@ def admin():
 def login():
     username = request.form['username']
     password = request.form['password']
-    valid_user = os.getenv('ADMIN_USERNAME', 'admin') 
-    valid_pass = os.getenv('ADMIN_PASSWORD', 'Sivaraj9677')
-    if username == valid_user and password == valid_pass:
+    # Credentials
+    if username == "admin" and password == "Sivaraj9677":
         session['logged_in'] = True
         return redirect(url_for('admin'))
     else:
@@ -81,14 +78,19 @@ def logout():
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
     if 'logged_in' not in session: return redirect(url_for('login'))
-    title = request.form['title']
-    image = request.files['image']
-    if image:
-        upload_result = cloudinary.uploader.upload(image)
-        certificates_col.insert_one({
-            'title': title, 'image': upload_result['secure_url'], 'position': 0 
-        })
-    return redirect(url_for('admin'))
+    try:
+        title = request.form['title']
+        image = request.files['image']
+        if image:
+            upload_result = cloudinary.uploader.upload(image)
+            certificates_col.insert_one({
+                'title': title, 
+                'image': upload_result['secure_url'], 
+                'position': 0 
+            })
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"<h1>Upload Error:</h1><p>{e}</p><a href='/admin'>Back</a>"
 
 @app.route('/delete_certificate/<string:id>')
 def delete_certificate(id):
@@ -96,25 +98,45 @@ def delete_certificate(id):
     certificates_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
+# --- FIXED ADD_PROJECT FUNCTION ---
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
-    title = request.form['title']
-    category = request.form['category']
-    description = request.form.get('description', '')
-    image = request.files['image']
-    report = request.files['report']
-    if image:
-        upload_result = cloudinary.uploader.upload(image)
-        report_url = ""
-        if report:
-            report_res = cloudinary.uploader.upload(report, resource_type="auto")
-            report_url = report_res['secure_url']
-        projects_col.insert_one({
-            'title': title, 'category': category, 'description': description,
-            'image': upload_result['secure_url'], 'report': report_url, 'position': 0
-        })
-    return redirect(url_for('admin'))
+
+    try:
+        title = request.form['title']
+        category = request.form['category']
+        description = request.form.get('description', '')
+        
+        image = request.files['image']
+        report = request.files['report']
+
+        if image:
+            # 1. Upload Image
+            image_upload = cloudinary.uploader.upload(image)
+            image_url = image_upload['secure_url']
+
+            # 2. Upload Report (ONLY if user actually selected a file)
+            report_url = ""
+            if report and report.filename != '':
+                report_upload = cloudinary.uploader.upload(report, resource_type="auto")
+                report_url = report_upload['secure_url']
+            
+            # 3. Save to MongoDB
+            projects_col.insert_one({
+                'title': title,
+                'category': category,
+                'description': description,
+                'image': image_url,
+                'report': report_url,
+                'position': 0
+            })
+            
+        return redirect(url_for('admin'))
+
+    except Exception as e:
+        # This will show you exactly why it failed instead of crashing
+        return f"<h1>Error during Upload:</h1><p>{str(e)}</p><br><a href='/admin'>Go Back</a>"
 
 @app.route('/delete_project/<string:id>')
 def delete_project(id):
@@ -131,14 +153,12 @@ def reorder():
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
 
-# --- THE FIX IS HERE ---
-# We changed <int:index> to <int:id> to match your HTML
 @app.route('/project/<int:id>')
 def project_details(id):
     projects = list(projects_col.find().sort('position', 1))
     if 0 <= id < len(projects):
         project = projects[id]
-        return render_template('project_details.html', project=project)
+        return render_template('portfolio.html', project=project)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
