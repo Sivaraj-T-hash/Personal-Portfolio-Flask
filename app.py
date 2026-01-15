@@ -158,7 +158,7 @@ def project_details(id):
     projects = list(projects_col.find().sort('position', 1))
     if 0 <= id < len(projects):
         project = projects[id]
-        return render_template('portfolio.html', project=project)
+        return render_template('project_details.html', project=project)
     return redirect(url_for('index'))
 
 if __name__ == '__main__':
