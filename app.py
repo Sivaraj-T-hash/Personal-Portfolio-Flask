@@ -109,17 +109,18 @@ def add_project():
         description = request.form.get('description', '')
         
         image = request.files['image']
-        report = request.files['report']
+        report = request.files.get('report')
 
         if image:
-            # 1. Upload Image
+            # 1. Upload Image (Cloudinary defaults to image)
             image_upload = cloudinary.uploader.upload(image)
             image_url = image_upload['secure_url']
 
-            # 2. Upload Report (ONLY if user actually selected a file)
+            # 2. Upload Report (Force Cloudinary to treat it as a document)
             report_url = ""
             if report and report.filename != '':
-                report_upload = cloudinary.uploader.upload(report, resource_type="auto")
+                # FIXED: Changed resource_type to "raw"
+                report_upload = cloudinary.uploader.upload(report, resource_type="raw")
                 report_url = report_upload['secure_url']
             
             # 3. Save to MongoDB
@@ -135,9 +136,8 @@ def add_project():
         return redirect(url_for('admin'))
 
     except Exception as e:
-        # This will show you exactly why it failed instead of crashing
         return f"<h1>Error during Upload:</h1><p>{str(e)}</p><br><a href='/admin'>Go Back</a>"
-
+        
 @app.route('/delete_project/<string:id>')
 def delete_project(id):
     if 'logged_in' not in session: return redirect(url_for('admin'))
