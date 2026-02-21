@@ -123,7 +123,11 @@ def add_project():
                     use_filename=True,
                     unique_filename=True
                 )
-                report_url = report_upload['secure_url']
+                
+                # --- NEW CODE: Add the attachment flag before saving to MongoDB ---
+                original_url = report_upload['secure_url']
+                report_url = original_url.replace('/upload/', '/upload/fl_attachment/')
+                # ------------------------------------------------------------------
             
             # 3. Save to MongoDB
             projects_col.insert_one({
@@ -139,7 +143,8 @@ def add_project():
 
     except Exception as e:
         return f"<h1>Error during Upload:</h1><p>{str(e)}</p><br><a href='/admin'>Go Back</a>"
-        
+
+
 @app.route('/delete_project/<string:id>')
 def delete_project(id):
     if 'logged_in' not in session: return redirect(url_for('admin'))
