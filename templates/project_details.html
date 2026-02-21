@@ -75,10 +75,10 @@
                             </a>
 
                             {% if project.report %}
-    <a href="{{ project.report }}" download="{{ project.title }}_Report.pdf" target="_blank" class="btn btn-danger px-4 py-2 rounded-pill">
-        <i class="bi bi-file-earmark-pdf-fill me-2"></i> Download Report
-    </a>
-{% endif %}
+                            <a href="{{ project.report | replace('/upload/', '/upload/fl_attachment/') }}" target="_blank" class="btn btn-danger px-4 py-2 rounded-pill">
+                            <i class="bi bi-file-earmark-pdf-fill me-2"></i> Download Report
+                            </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
