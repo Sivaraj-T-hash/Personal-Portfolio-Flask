@@ -118,8 +118,9 @@ def add_project():
 
             # 2. Upload Report (Force Cloudinary to treat it as a document)
             report_url = ""
+            # Inside add_project function
             if report and report.filename != '':
-                # FIXED: Changed resource_type to "raw"
+                # Force Cloudinary to treat this as a non-image file
                 report_upload = cloudinary.uploader.upload(report, resource_type="raw")
                 report_url = report_upload['secure_url']
             
