@@ -19,7 +19,6 @@ projects_col = db['projects']
 visitors_col = db['visitors']
 
 # --- 2. CLOUDINARY CONFIG ---
-# Make sure these are YOUR correct keys!
 cloudinary.config(
     cloud_name = "doqgziycf", 
     api_key = "636344164192868", 
@@ -63,7 +62,7 @@ def admin():
 def login():
     username = request.form['username']
     password = request.form['password']
-    # Credentials
+    # Admin Credentials
     if username == "admin" and password == "Sivaraj9677":
         session['logged_in'] = True
         return redirect(url_for('admin'))
@@ -98,7 +97,6 @@ def delete_certificate(id):
     certificates_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
-# --- FIXED ADD_PROJECT FUNCTION ---
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
@@ -112,16 +110,19 @@ def add_project():
         report = request.files.get('report')
 
         if image:
-            # 1. Upload Image (Cloudinary defaults to image)
+            # 1. Upload Image
             image_upload = cloudinary.uploader.upload(image)
             image_url = image_upload['secure_url']
 
-            # 2. Upload Report (Force Cloudinary to treat it as a document)
+            # 2. Upload Report (Forcing 'raw' type prevents PDF corruption)
             report_url = ""
-            # Inside add_project function
             if report and report.filename != '':
-                # Force Cloudinary to treat this as a non-image file
-                report_upload = cloudinary.uploader.upload(report, resource_type="raw")
+                report_upload = cloudinary.uploader.upload(
+                    report, 
+                    resource_type="raw",
+                    use_filename=True,
+                    unique_filename=True
+                )
                 report_url = report_upload['secure_url']
             
             # 3. Save to MongoDB
