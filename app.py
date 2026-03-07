@@ -5,6 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from pymongo import MongoClient
 import certifi
 from bson.objectid import ObjectId
+from werkzeug.utils import secure_filename  # <--- ADD THIS LINE
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
@@ -114,20 +115,19 @@ def add_project():
             image_upload = cloudinary.uploader.upload(image)
             image_url = image_upload['secure_url']
 
-            # 2. Upload Report (Forcing 'raw' type prevents PDF corruption)
+            # 2. Upload Report (FORCE the extension to stay in the URL)
             report_url = ""
             if report and report.filename != '':
+                # Grab the exact filename you uploaded (e.g., 'my_report.pdf')
+                exact_filename = secure_filename(report.filename)
+                
+                # Upload and force Cloudinary to use that exact name
                 report_upload = cloudinary.uploader.upload(
                     report, 
                     resource_type="raw",
-                    use_filename=True,
-                    unique_filename=True
+                    public_id=exact_filename  # <--- THIS fixes the missing .pdf
                 )
-                
-                # --- NEW CODE: Add the attachment flag before saving to MongoDB ---
-                original_url = report_upload['secure_url']
-                report_url = original_url.replace('/upload/', '/upload/fl_attachment/')
-                # ------------------------------------------------------------------
+                report_url = report_upload['secure_url']
             
             # 3. Save to MongoDB
             projects_col.insert_one({
