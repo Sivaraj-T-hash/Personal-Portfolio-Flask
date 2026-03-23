@@ -32,15 +32,17 @@
             background-color: #333;
             color: #fff;
         }
-        /* Image Header Style */
-        .project-img-header {
-            width: 100%;
-            height: 450px;
-            object-fit: cover;
-            border-top-left-radius: var(--bs-border-radius-xl) !important;
-            border-top-right-radius: var(--bs-border-radius-xl) !important;
-            border-bottom: 1px solid #222;
-        }
+       /* --- UPDATED PROJECT HEADER STYLE --- */
+.project-img-header {
+    width: 100%;
+    height: 450px;
+    object-fit: contain; /* Changed from cover to contain */
+    background-color: #080808; /* Pure dark background for the frame */
+    border-top-left-radius: var(--bs-border-radius-xl) !important;
+    border-top-right-radius: var(--bs-border-radius-xl) !important;
+    border-bottom: 1px solid #222;
+    padding: 20px; /* Optional: Adds a frame effect around your project image */
+}
     </style>
 </head>
 <body>
