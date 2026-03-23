@@ -76,15 +76,27 @@
                 <table class="table align-middle">
                     <thead><tr><th>Image</th><th>Title</th><th>Category</th><th>Action</th></tr></thead>
                     <tbody id="project-list">
-                        {% for project in projects %}
-                        <tr data-id="{{ project._id }}" class="draggable-item">
-                            <td><img src="{{ project.image }}" class="img-thumbnail"></td>
-                            <td>{{ project.title }}</td>
-                            <td>{{ project.category }}</td>
-                            <td><a href="/delete_project/{{ project._id }}" class="btn btn-sm btn-danger">Delete</a></td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
+    {% for project in projects %}
+    <tr data-id="{{ project._id }}" class="draggable-item">
+        <td><img src="{{ project.image }}" class="img-thumbnail"></td>
+        
+        <td>{{ project.title }}</td>
+        
+        <td>{{ project.category }}</td>
+        
+        <td>
+            <div class="btn-group">
+                <a href="/edit_project/{{ project._id }}" class="btn btn-sm btn-warning text-dark">
+                    <i class="bi bi-pencil-square"></i> Edit
+                </a>
+                <a href="/delete_project/{{ project._id }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete this project?')">
+                    <i class="bi bi-trash"></i> Delete
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
                 </table>
             </div>
         </div>
