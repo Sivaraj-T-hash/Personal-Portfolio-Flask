@@ -586,22 +586,25 @@
 
   /* --- PROJECT GRID FIX --- */
   /* --- UPDATED PROJECT GRID FIX --- */
+/* --- UPDATE THIS SECTION IN index.html --- */
 .portfolio-image-container {
     width: 100%;
     height: 250px;  
     overflow: hidden;
     border-radius: 10px;
-    background-color: #111111; /* Adds a dark background to fill empty space */
+    background-color: #000; /* This fills the 'empty' space with black so it looks clean */
 }
 
 .portfolio-image-container img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* This prevents cropping */
-    padding: 15px; /* Gives some space so the image doesn't touch the edges */
+    /* CHANGE 'cover' TO 'contain' HERE */
+    object-fit: contain; 
+    object-position: center;
     transition: transform 0.3s ease;
 }
 
+/* Optional: reduce the hover zoom so it doesn't cut off when hovering */
 .portfolio-image-container:hover img { 
     transform: scale(1.05); 
 }
