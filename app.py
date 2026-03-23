@@ -11,7 +11,8 @@ app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
 
 # --- 1. MONGODB CONNECTION ---
-MONGO_URI = os.environ.get('MONGO_URI')client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+MONGO_URI = os.environ.get('MONGO_URI')
+client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['portfolio_db']
 
 certificates_col = db['certificates']
