@@ -11,8 +11,7 @@ app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
 
 # --- 1. MONGODB CONNECTION ---
-MONGO_URI = "mongodb+srv://admin:Sivaraj9677@cluster0.bisuniq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
+MONGO_URI = os.environ.get('MONGO_URI')client = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = client['portfolio_db']
 
 certificates_col = db['certificates']
@@ -21,9 +20,9 @@ visitors_col = db['visitors']
 
 # --- 2. CLOUDINARY CONFIG ---
 cloudinary.config(
-    cloud_name = "doqgziycf", 
-    api_key = "636344164192868", 
-    api_secret = "gMBO2pdLflJByR1IFqhcZDG8M1M",
+    cloud_name = os.environ.get('CLOUDY_NAME'), 
+    api_key = os.environ.get('CLOUDY_KEY'), 
+    api_secret = os.environ.get('CLOUDY_SECRET'),
     secure = True
 )
 
@@ -62,11 +61,11 @@ def admin():
 @app.route('/login', methods=['POST'])
 def login():
     admin_user = os.environ.get('ADMIN_USER', 'admin') 
-admin_pass = os.environ.get('ADMIN_PASS')
+    admin_pass = os.environ.get('ADMIN_PASS')
 
-if username == admin_user and password == admin_pass:
-    session['logged_in'] = True
-    return redirect(url_for('admin'))
+    if username == admin_user and password == admin_pass:
+        session['logged_in'] = True
+        return redirect(url_for('admin'))
     else:
         return render_template('admin_login.html', error="Invalid Credentials")
 
