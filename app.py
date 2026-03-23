@@ -61,12 +61,12 @@ def admin():
 
 @app.route('/login', methods=['POST'])
 def login():
-    username = request.form['username']
-    password = request.form['password']
-    # Admin Credentials
-    if username == "admin" and password == "Sivaraj9677":
-        session['logged_in'] = True
-        return redirect(url_for('admin'))
+    admin_user = os.environ.get('ADMIN_USER', 'admin') 
+admin_pass = os.environ.get('ADMIN_PASS')
+
+if username == admin_user and password == admin_pass:
+    session['logged_in'] = True
+    return redirect(url_for('admin'))
     else:
         return render_template('admin_login.html', error="Invalid Credentials")
 
