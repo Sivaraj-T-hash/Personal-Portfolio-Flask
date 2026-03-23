@@ -167,6 +167,53 @@ def project_details(id):
         project = projects[id]
         return render_template('project_details.html', project=project)
     return redirect(url_for('index'))
+# --- 1. ROUTE TO SHOW THE EDIT FORM ---
+@app.route('/edit_project/<string:id>')
+def edit_project_page(id):
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    project = projects_col.find_one({'_id': ObjectId(id)})
+    return render_template('edit_project.html', project=project)
+
+# --- 2. ROUTE TO PROCESS THE UPDATE ---
+@app.route('/update_project/<string:id>', methods=['POST'])
+def update_project(id):
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    try:
+        title = request.form['title']
+        category = request.form['category']
+        description = request.form['description']
+        
+        # Check if new files were uploaded
+        image = request.files.get('image')
+        report = request.files.get('report')
+        
+        update_data = {
+            'title': title,
+            'category': category,
+            'description': description
+        }
+
+        # Only update image if a new one is selected
+        if image and image.filename != '':
+            image_upload = cloudinary.uploader.upload(image)
+            update_data['image'] = image_upload['secure_url']
+
+        # Only update report if a new one is selected
+        if report and report.filename != '':
+            exact_filename = secure_filename(report.filename)
+            report_upload = cloudinary.uploader.upload(
+                report, 
+                resource_type="raw",
+                public_id=exact_filename
+            )
+            update_data['report'] = report_upload['secure_url']
+
+        projects_col.update_one({'_id': ObjectId(id)}, {'$set': update_data})
+        return redirect(url_for('admin'))
+
+    except Exception as e:
+        return f"<h1>Update Error:</h1><p>{str(e)}</p><a href='/admin'>Back</a>"
 
 if __name__ == '__main__':
     app.run(debug=True)
