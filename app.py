@@ -61,15 +61,21 @@ def admin():
 
 @app.route('/login', methods=['POST'])
 def login():
+    # 1. Get the data from the HTML form
+    username = request.form.get('username')
+    password = request.form.get('password')
+    
+    # 2. Fetch the secrets from Render Environment Variables
     admin_user = os.environ.get('ADMIN_USER', 'admin') 
     admin_pass = os.environ.get('ADMIN_PASS')
 
+    # 3. Perform the check (This MUST be indented)
     if username == admin_user and password == admin_pass:
         session['logged_in'] = True
         return redirect(url_for('admin'))
     else:
         return render_template('admin_login.html', error="Invalid Credentials")
-
+        
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
