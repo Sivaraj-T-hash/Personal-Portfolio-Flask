@@ -5,7 +5,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from pymongo import MongoClient
 import certifi
 from bson.objectid import ObjectId
-from werkzeug.utils import secure_filename  # <--- ADD THIS LINE
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__, static_folder='assets', static_url_path='/assets')
 app.secret_key = 'super_secret_key'
@@ -18,6 +18,7 @@ db = client['portfolio_db']
 certificates_col = db['certificates']
 projects_col = db['projects']
 visitors_col = db['visitors']
+settings_col = db['settings']  # <--- NEW: Settings Collection
 
 # --- 2. CLOUDINARY CONFIG ---
 cloudinary.config(
@@ -45,10 +46,17 @@ def index():
         certificates = list(certificates_col.find().sort('position', 1))
         projects = list(projects_col.find().sort('position', 1))
         
+        # Fetch Settings (Resume & Drive Link)
+        settings = settings_col.find_one({'_id': 'general'}) or {}
+        resume_url = settings.get('resume_url', '#')
+        drive_link = settings.get('drive_link', '#')
+        
         return render_template('index.html', 
                                certificates=certificates, 
                                projects=projects,
-                               visitors=total_views)
+                               visitors=total_views,
+                               resume_url=resume_url,
+                               drive_link=drive_link)
     except Exception as e:
         return f"<h1 style='color:red'>Database Error:</h1><p>{e}</p>"
 
@@ -57,7 +65,9 @@ def admin():
     if 'logged_in' not in session: return render_template('admin_login.html')
     certificates = list(certificates_col.find().sort('position', 1))
     projects = list(projects_col.find().sort('position', 1))
-    return render_template('admin.html', certificates=certificates, projects=projects)
+    
+    settings = settings_col.find_one({'_id': 'general'}) or {}
+    return render_template('admin.html', certificates=certificates, projects=projects, settings=settings)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -69,7 +79,7 @@ def login():
     admin_user = os.environ.get('ADMIN_USER', 'admin') 
     admin_pass = os.environ.get('ADMIN_PASS')
 
-    # 3. Perform the check (This MUST be indented)
+    # 3. Perform the check
     if username == admin_user and password == admin_pass:
         session['logged_in'] = True
         return redirect(url_for('admin'))
@@ -80,6 +90,40 @@ def login():
 def logout():
     session.pop('logged_in', None)
     return redirect(url_for('index'))
+
+# --- NEW: UPDATE SITE SETTINGS ROUTE ---
+@app.route('/update_site_settings', methods=['POST'])
+def update_site_settings():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    
+    try:
+        update_data = {}
+        
+        drive_link = request.form.get('drive_link')
+        if drive_link:
+            update_data['drive_link'] = drive_link
+
+        resume = request.files.get('resume')
+        if resume and resume.filename != '':
+            exact_filename = secure_filename(resume.filename)
+            resume_upload = cloudinary.uploader.upload(
+                resume, 
+                resource_type="raw",
+                public_id=exact_filename
+            )
+            update_data['resume_url'] = resume_upload['secure_url']
+
+        if update_data:
+            settings_col.update_one(
+                {'_id': 'general'}, 
+                {'$set': update_data}, 
+                upsert=True
+            )
+
+        return redirect(url_for('admin'))
+
+    except Exception as e:
+        return f"<h1>Error updating settings:</h1><p>{str(e)}</p><br><a href='/admin'>Go Back</a>"
 
 @app.route('/add_certificate', methods=['POST'])
 def add_certificate():
@@ -117,25 +161,19 @@ def add_project():
         report = request.files.get('report')
 
         if image:
-            # 1. Upload Image
             image_upload = cloudinary.uploader.upload(image)
             image_url = image_upload['secure_url']
 
-            # 2. Upload Report (FORCE the extension to stay in the URL)
             report_url = ""
             if report and report.filename != '':
-                # Grab the exact filename you uploaded (e.g., 'my_report.pdf')
                 exact_filename = secure_filename(report.filename)
-                
-                # Upload and force Cloudinary to use that exact name
                 report_upload = cloudinary.uploader.upload(
                     report, 
                     resource_type="raw",
-                    public_id=exact_filename  # <--- THIS fixes the missing .pdf
+                    public_id=exact_filename 
                 )
                 report_url = report_upload['secure_url']
             
-            # 3. Save to MongoDB
             projects_col.insert_one({
                 'title': title,
                 'category': category,
@@ -149,7 +187,6 @@ def add_project():
 
     except Exception as e:
         return f"<h1>Error during Upload:</h1><p>{str(e)}</p><br><a href='/admin'>Go Back</a>"
-
 
 @app.route('/delete_project/<string:id>')
 def delete_project(id):
@@ -173,14 +210,13 @@ def project_details(id):
         project = projects[id]
         return render_template('project_details.html', project=project)
     return redirect(url_for('index'))
-# --- 1. ROUTE TO SHOW THE EDIT FORM ---
+
 @app.route('/edit_project/<string:id>')
 def edit_project_page(id):
     if 'logged_in' not in session: return redirect(url_for('login'))
     project = projects_col.find_one({'_id': ObjectId(id)})
     return render_template('edit_project.html', project=project)
 
-# --- 2. ROUTE TO PROCESS THE UPDATE ---
 @app.route('/update_project/<string:id>', methods=['POST'])
 def update_project(id):
     if 'logged_in' not in session: return redirect(url_for('login'))
@@ -190,7 +226,6 @@ def update_project(id):
         category = request.form['category']
         description = request.form['description']
         
-        # Check if new files were uploaded
         image = request.files.get('image')
         report = request.files.get('report')
         
@@ -200,12 +235,10 @@ def update_project(id):
             'description': description
         }
 
-        # Only update image if a new one is selected
         if image and image.filename != '':
             image_upload = cloudinary.uploader.upload(image)
             update_data['image'] = image_upload['secure_url']
 
-        # Only update report if a new one is selected
         if report and report.filename != '':
             exact_filename = secure_filename(report.filename)
             report_upload = cloudinary.uploader.upload(
