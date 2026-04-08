@@ -60,10 +60,6 @@ def index():
     except Exception as e:
         return f"<h1 style='color:red'>Database Error:</h1><p>{e}</p>"
 
-@app.route('/ping')
-def ping():
-    # This route does NOT connect to MongoDB, so it won't increase your view count!
-    return "Website is awake!", 200
 
 @app.route('/admin')
 def admin():
