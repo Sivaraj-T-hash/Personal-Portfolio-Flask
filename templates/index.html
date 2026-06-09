@@ -388,7 +388,7 @@
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
           {% for cert in certificates %}
-          <div class="col-lg-4 col-md-6">
+          <div class="col-lg-4 col-md-6{% if loop.index > 3 %} d-none extra-certificate{% endif %}">
             <div class="portfolio-item">
               <img src="{{ cert.image }}" class="img-fluid" alt="{{ cert.title }}">
               <div class="portfolio-info">
@@ -410,6 +410,14 @@
           </div>
           {% endfor %}
         </div>
+
+        {% if certificates|length > 3 %}
+        <div class="text-center mt-5" data-aos="fade-up">
+          <button id="btn-see-more-certs" class="btn btn-glow" onclick="toggleCertificates()">
+            Click to See More Certificates ({{ certificates|length }} total) <i class="bi bi-chevron-down ms-1"></i>
+          </button>
+        </div>
+        {% endif %}
       </div>
     </section>
 
@@ -423,7 +431,7 @@
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4" data-aos="fade-up" data-aos-delay="300">
           {% for project in projects %}
-          <div class="col-lg-6 col-md-6 portfolio-item{% if loop.index > 3 %} d-none extra-project{% endif %}">
+          <div class="col-lg-6 col-md-6 portfolio-item{% if loop.index > 4 %} d-none extra-project{% endif %}">
             <div class="portfolio-card">
               <div class="portfolio-image-container">
                 <img src="{{ project.image }}" alt="{{ project.title }}">
@@ -452,7 +460,7 @@
           {% endfor %}
         </div>
 
-        {% if projects|length > 3 %}
+        {% if projects|length > 4 %}
         <div class="text-center mt-5" data-aos="fade-up">
           <button id="btn-see-more" class="btn btn-glow" onclick="toggleProjects()">
             Click to See More Projects ({{ projects|length }} total) <i class="bi bi-chevron-down ms-1"></i>
@@ -698,6 +706,33 @@
       } else {
         btn.innerHTML = 'Click to See More Projects ({{ projects|length }} total) <i class="bi bi-chevron-down ms-1"></i>';
         document.getElementById('portfolio').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function toggleCertificates() {
+      const extraCerts = document.querySelectorAll('.extra-certificate');
+      const btn = document.getElementById('btn-see-more-certs');
+      const isHidden = extraCerts[0].classList.contains('d-none');
+      
+      extraCerts.forEach(cert => {
+        if (isHidden) {
+          cert.classList.remove('d-none');
+          // Smooth fade in
+          cert.style.opacity = '0';
+          cert.style.transition = 'opacity 0.4s ease';
+          setTimeout(() => {
+            cert.style.opacity = '1';
+          }, 50);
+        } else {
+          cert.classList.add('d-none');
+        }
+      });
+      
+      if (isHidden) {
+        btn.innerHTML = 'Show Less <i class="bi bi-chevron-up ms-1"></i>';
+      } else {
+        btn.innerHTML = 'Click to See More Certificates ({{ certificates|length }} total) <i class="bi bi-chevron-down ms-1"></i>';
+        document.getElementById('certificates').scrollIntoView({ behavior: 'smooth' });
       }
     }
   </script>
