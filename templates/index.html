@@ -423,7 +423,7 @@
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4" data-aos="fade-up" data-aos-delay="300">
           {% for project in projects %}
-          <div class="col-lg-6 col-md-6 portfolio-item">
+          <div class="col-lg-6 col-md-6 portfolio-item{% if loop.index > 3 %} d-none extra-project{% endif %}">
             <div class="portfolio-card">
               <div class="portfolio-image-container">
                 <img src="{{ project.image }}" alt="{{ project.title }}">
@@ -451,6 +451,14 @@
           </div>
           {% endfor %}
         </div>
+
+        {% if projects|length > 3 %}
+        <div class="text-center mt-5" data-aos="fade-up">
+          <button id="btn-see-more" class="btn btn-glow" onclick="toggleProjects()">
+            Click to See More Projects ({{ projects|length }} total) <i class="bi bi-chevron-down ms-1"></i>
+          </button>
+        </div>
+        {% endif %}
       </div>
     </section>
 
@@ -664,6 +672,33 @@
 
         chatMessages.scrollTop = chatMessages.scrollHeight;
       }, 600);
+    }
+
+    function toggleProjects() {
+      const extraProjects = document.querySelectorAll('.extra-project');
+      const btn = document.getElementById('btn-see-more');
+      const isHidden = extraProjects[0].classList.contains('d-none');
+      
+      extraProjects.forEach(project => {
+        if (isHidden) {
+          project.classList.remove('d-none');
+          // Smooth fade in
+          project.style.opacity = '0';
+          project.style.transition = 'opacity 0.4s ease';
+          setTimeout(() => {
+            project.style.opacity = '1';
+          }, 50);
+        } else {
+          project.classList.add('d-none');
+        }
+      });
+      
+      if (isHidden) {
+        btn.innerHTML = 'Show Less <i class="bi bi-chevron-up ms-1"></i>';
+      } else {
+        btn.innerHTML = 'Click to See More Projects ({{ projects|length }} total) <i class="bi bi-chevron-down ms-1"></i>';
+        document.getElementById('portfolio').scrollIntoView({ behavior: 'smooth' });
+      }
     }
   </script>
 
