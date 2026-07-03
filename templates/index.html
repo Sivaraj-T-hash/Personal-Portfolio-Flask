@@ -259,7 +259,8 @@
         <span class="subtitle">My Journey</span>
         <h2>Resume</h2>
         <div class="text-center mt-3">
-          <a href="https://res.cloudinary.com/doqgziycf/raw/upload/v1781188642/Sivaraj_Resume_june_2026.pdf" target="_blank" rel="noopener noreferrer" class="btn btn-glow">
+          <a href="https://res.cloudinary.com/doqgziycf/raw/upload/v1781188642/Sivaraj_Resume_june_2026.pdf"
+            target="_blank" rel="noopener noreferrer" class="btn btn-glow">
             <i class="bi bi-file-earmark-pdf-fill me-2"></i>View Resume
           </a>
         </div>
@@ -388,6 +389,13 @@
         <span class="subtitle">Credentials</span>
         <h2>Certificates</h2>
         <p>Verified certificates and awards.</p>
+        {% if drive_folder_link %}
+        <div class="mt-4">
+          <a href="{{ drive_folder_link }}" target="_blank" rel="noopener noreferrer" class="btn btn-glow-drive">
+            <i class="bi bi-google me-2"></i>View on Google Drive
+          </a>
+        </div>
+        {% endif %}
       </div>
 
       <div class="container" data-aos="fade-up" data-aos-delay="100">
@@ -399,10 +407,18 @@
               <div class="portfolio-info">
                 <h4>{{ cert.title }}</h4>
                 <p>Verified Certificate</p>
-                <a href="{{ cert.image }}" target="_blank" rel="noopener noreferrer" title="{{ cert.title }}"
-                  class="glightbox preview-link">
-                  <i class="bi bi-zoom-in"></i>
-                </a>
+                <div class="cert-links-container">
+                  <a href="{{ cert.image }}" target="_blank" rel="noopener noreferrer" title="{{ cert.title }}"
+                    class="glightbox preview-link btn-cert-action">
+                    <i class="bi bi-zoom-in me-1"></i> Preview
+                  </a>
+                  {% if cert.drive_link %}
+                  <a href="{{ cert.drive_link }}" target="_blank" rel="noopener noreferrer" title="View on Google Drive"
+                    class="btn-cert-action btn-cert-drive">
+                    <i class="bi bi-google me-1"></i> Drive
+                  </a>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
@@ -691,7 +707,7 @@
       const extraProjects = document.querySelectorAll('.extra-project');
       const btn = document.getElementById('btn-see-more');
       const isHidden = extraProjects[0].classList.contains('d-none');
-      
+
       extraProjects.forEach(project => {
         if (isHidden) {
           project.classList.remove('d-none');
@@ -705,7 +721,7 @@
           project.classList.add('d-none');
         }
       });
-      
+
       if (isHidden) {
         btn.innerHTML = 'Show Less <i class="bi bi-chevron-up ms-1"></i>';
       } else {
@@ -718,7 +734,7 @@
       const extraCerts = document.querySelectorAll('.extra-certificate');
       const btn = document.getElementById('btn-see-more-certs');
       const isHidden = extraCerts[0].classList.contains('d-none');
-      
+
       extraCerts.forEach(cert => {
         if (isHidden) {
           cert.classList.remove('d-none');
@@ -732,7 +748,7 @@
           cert.classList.add('d-none');
         }
       });
-      
+
       if (isHidden) {
         btn.innerHTML = 'Show Less <i class="bi bi-chevron-up ms-1"></i>';
       } else {
@@ -990,6 +1006,161 @@
     100% {
       transform: translateY(0px);
     }
+  }
+
+  /* --- CERTIFICATES CARD STYLE --- */
+  .portfolio-item {
+    background: var(--surface-color);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .portfolio-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-color);
+  }
+
+  .portfolio-item img {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .portfolio-item .portfolio-info {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .portfolio-item .portfolio-info h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--heading-color);
+  }
+
+  .portfolio-item .portfolio-info p {
+    font-size: 0.85rem;
+    color: color-mix(in srgb, var(--default-color), transparent 45%);
+    margin-bottom: 15px;
+  }
+
+  /* Links & Action buttons inside certificates */
+  .cert-links-container {
+    display: flex;
+    gap: 10px;
+    margin-top: auto;
+  }
+
+  .btn-cert-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    flex: 1;
+    text-align: center;
+  }
+
+  .btn-cert-action.preview-link {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--default-color);
+  }
+
+  .btn-cert-action.preview-link:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+
+  .btn-cert-action.btn-cert-drive {
+    background: linear-gradient(45deg, #20bf55, #01baef);
+    border: none;
+    color: white;
+    box-shadow: 0 4px 15px rgba(32, 191, 85, 0.3);
+  }
+
+  .btn-cert-action.btn-cert-drive:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(32, 191, 85, 0.5);
+    color: white;
+  }
+
+  /* --- PROJECTS OVERLAY & DETAILS BUTTON --- */
+  .portfolio .portfolio-card .portfolio-image-container .portfolio-overlay {
+    opacity: 1;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.85) 100%);
+  }
+
+  .portfolio .portfolio-card .portfolio-image-container .portfolio-overlay .portfolio-actions a.portfolio-details {
+    width: auto;
+    height: auto;
+    background: transparent;
+    color: white;
+    border-radius: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .portfolio .portfolio-card .portfolio-image-container .portfolio-overlay .portfolio-actions a.portfolio-details i {
+    width: 32px;
+    height: 32px;
+    background-color: var(--accent-color);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .portfolio .portfolio-card .portfolio-image-container .portfolio-overlay .portfolio-actions a.portfolio-details:hover {
+    color: white;
+  }
+
+  .portfolio .portfolio-card .portfolio-image-container .portfolio-overlay .portfolio-actions a.portfolio-details:hover i {
+    transform: translateX(3px) scale(1.1);
+    background-color: color-mix(in srgb, var(--accent-color), white 15%);
+  }
+
+  /* --- GOOGLE DRIVE BUTTON GLOW EFFECT --- */
+  .btn-glow-drive {
+    background: linear-gradient(45deg, #20bf55, #01baef);
+    color: white;
+    padding: 12px 35px;
+    border-radius: 50px;
+    border: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(1, 186, 239, 0.4);
+    display: inline-block;
+    text-decoration: none;
+  }
+
+  .btn-glow-drive:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(1, 186, 239, 0.6);
+    color: white;
   }
 </style>
 
