@@ -21,6 +21,7 @@ certificates_col = db['certificates']
 projects_col = db['projects']
 visitors_col = db['visitors']
 settings_col = db['settings']  # <--- NEW: Settings Collection
+internships_col = db['internships']  # <--- NEW: Internships Collection
 
 # --- 2. CLOUDINARY CONFIG ---
 cloudinary.config(
@@ -47,6 +48,7 @@ def index():
         # Fetch Data
         certificates = list(certificates_col.find().sort('position', 1))
         projects = list(projects_col.find().sort('position', 1))
+        internships = list(internships_col.find().sort('position', 1))
         
         # Fetch Settings (Resume & Drive Link)
         settings = settings_col.find_one({'_id': 'general'}) or {}
@@ -57,6 +59,7 @@ def index():
         return render_template('index.html', 
                                certificates=certificates, 
                                projects=projects,
+                               internships=internships,
                                visitors=total_views,
                                resume_url=resume_url,
                                drive_link=drive_link,
@@ -70,9 +73,10 @@ def admin():
     if 'logged_in' not in session: return render_template('admin_login.html')
     certificates = list(certificates_col.find().sort('position', 1))
     projects = list(projects_col.find().sort('position', 1))
+    internships = list(internships_col.find().sort('position', 1))
     
     settings = settings_col.find_one({'_id': 'general'}) or {}
-    return render_template('admin.html', certificates=certificates, projects=projects, settings=settings)
+    return render_template('admin.html', certificates=certificates, projects=projects, internships=internships, settings=settings)
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -157,6 +161,44 @@ def delete_certificate(id):
     certificates_col.delete_one({'_id': ObjectId(id)})
     return redirect(url_for('admin'))
 
+@app.route('/add_internship', methods=['POST'])
+def add_internship():
+    if 'logged_in' not in session: return redirect(url_for('login'))
+    try:
+        internship_name = request.form.get('internship_name', '')
+        company = request.form.get('company', '')
+        start_date = request.form.get('start_date', '')
+        end_date = request.form.get('end_date', '')
+        certificate = request.files.get('certificate')
+
+        certificate_url = ""
+        if certificate and certificate.filename != '':
+            exact_filename = secure_filename(certificate.filename)
+            upload_result = cloudinary.uploader.upload(
+                certificate,
+                resource_type="auto",
+                public_id=exact_filename
+            )
+            certificate_url = upload_result['secure_url']
+
+        internships_col.insert_one({
+            'internship_name': internship_name,
+            'company': company,
+            'start_date': start_date,
+            'end_date': end_date,
+            'certificate_url': certificate_url,
+            'position': 0
+        })
+        return redirect(url_for('admin'))
+    except Exception as e:
+        return f"<h1>Upload Error:</h1><p>{str(e)}</p><a href='/admin'>Back</a>"
+
+@app.route('/delete_internship/<string:id>')
+def delete_internship(id):
+    if 'logged_in' not in session: return redirect(url_for('admin'))
+    internships_col.delete_one({'_id': ObjectId(id)})
+    return redirect(url_for('admin'))
+
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'logged_in' not in session: return redirect(url_for('login'))
@@ -207,7 +249,13 @@ def delete_project(id):
 def reorder():
     if 'logged_in' not in session: return "Unauthorized", 401
     data = request.get_json()
-    collection = certificates_col if data.get('collection') == 'certificates' else projects_col
+    coll_name = data.get('collection')
+    if coll_name == 'certificates':
+        collection = certificates_col
+    elif coll_name == 'internships':
+        collection = internships_col
+    else:
+        collection = projects_col
     for index, item_id in enumerate(data.get('order')):
         collection.update_one({'_id': ObjectId(item_id)}, {'$set': {'position': index}})
     return "OK", 200
@@ -264,4 +312,4 @@ def update_project(id):
         return f"<h1>Update Error:</h1><p>{str(e)}</p><a href='/admin'>Back</a>"
 
 if __name__ == '__main__':
-    app.run(debug=True,use_reloader=False)
+    app.run(debug=True)

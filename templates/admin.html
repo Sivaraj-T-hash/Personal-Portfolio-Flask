@@ -54,6 +54,80 @@
         </div>
 
         <div class="card shadow mb-4">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-briefcase-fill me-2"></i>Manage Internships (Drag to Reorder)
+            </div>
+            <div class="card-body">
+                <form action="/add_internship" method="POST" enctype="multipart/form-data" class="d-flex flex-column gap-3 mb-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label fw-bold">Internship Name / Role</label>
+                            <input type="text" name="internship_name" class="form-control" placeholder="e.g. Full Stack Web Development Intern" required>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <label class="form-label fw-bold">Company / Organization</label>
+                            <input type="text" name="company" class="form-control" placeholder="e.g. CyphraNovaTech Solutions" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label fw-bold">Start Date</label>
+                            <input type="text" name="start_date" class="form-control" placeholder="e.g. Jan 2024" required>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label fw-bold">End Date</label>
+                            <input type="text" name="end_date" class="form-control" placeholder="e.g. Jun 2024 or Present" required>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <label class="form-label fw-bold">Completion Certificate (PDF / Image)</label>
+                            <input type="file" name="certificate" class="form-control" accept="image/*,.pdf">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary fw-bold"><i class="bi bi-plus-circle-fill me-2"></i>Add Internship</button>
+                </form>
+
+                <table class="table align-middle table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Internship Name</th>
+                            <th>Company</th>
+                            <th>Dates</th>
+                            <th>Certificate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="internship-list">
+                        {% for item in internships %}
+                        <tr data-id="{{ item._id }}" class="draggable-item">
+                            <td class="fw-bold">{{ item.internship_name }}</td>
+                            <td><span class="badge bg-secondary">{{ item.company }}</span></td>
+                            <td><small class="text-muted"><i class="bi bi-calendar-event me-1"></i>{{ item.start_date }} - {{ item.end_date }}</small></td>
+                            <td>
+                                {% if item.certificate_url %}
+                                <a href="{{ item.certificate_url }}" target="_blank" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-file-earmark-check me-1"></i> View Certificate
+                                </a>
+                                {% else %}
+                                <span class="text-muted small">No File</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="/delete_internship/{{ item._id }}" class="btn btn-sm btn-danger" onclick="return confirm('Delete this internship?')">
+                                    <i class="bi bi-trash"></i> Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No internships added yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card shadow mb-4">
             <div class="card-header"><h5>Manage Certificates (Drag to Reorder)</h5></div>
             <div class="card-body">
                 <form action="/add_certificate" method="POST" enctype="multipart/form-data" class="d-flex gap-2 mb-4">
@@ -149,6 +223,7 @@
                 }
             });
         }
+        enableDragSort('internship-list', 'internships');
         enableDragSort('certificate-list', 'certificates');
         enableDragSort('project-list', 'projects');
     </script>

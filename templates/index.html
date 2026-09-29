@@ -29,9 +29,6 @@
 
 <body class="index-page">
 
-  <!-- Rainbow Cursor Trail Canvas Overlay -->
-  <canvas id="cursor-trail-canvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 9998; pointer-events: none; mix-blend-mode: screen;"></canvas>
-
   <div class="modal fade" id="welcomeModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content custom-glass-modal">
@@ -44,7 +41,7 @@
             Thank you for visiting my portfolio.<br>
             Explore my projects, skills, and certifications.
           </p>
-          <button type="button" class="btn btn-glow" data-bs-dismiss="modal">
+          <button type="button" class="btn btn-glow" data-bs-dismiss="modal" onclick="dismissWelcomeModal()">
             Start Exploring <i class="bi bi-arrow-right-short"></i>
           </button>
         </div>
@@ -74,6 +71,31 @@
     </div>
   </div>
 
+  <!-- Certificate Viewer Modal (In-Page Preview with X Close) -->
+  <div class="modal fade" id="certificateViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content text-white" style="background: rgba(15, 23, 42, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(16px); border-radius: 20px; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);">
+        <div class="modal-header border-bottom border-secondary d-flex justify-content-between align-items-center py-3 px-4">
+          <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2 mb-0" id="certModalTitleText">
+            <i class="bi bi-patch-check-fill text-success"></i> Certificate
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="font-size: 1.2rem; cursor: pointer;"></button>
+        </div>
+        <div class="modal-body text-center p-3" id="certModalBodyContent">
+          <!-- Content loaded dynamically -->
+        </div>
+        <div class="modal-footer border-top border-secondary justify-content-between py-2 px-4">
+          <a id="certModalExternalBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-info rounded-pill px-3">
+            <i class="bi bi-box-arrow-up-right me-1"></i> Open Fullscreen
+          </a>
+          <button type="button" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold" data-bs-dismiss="modal">
+            <i class="bi bi-x-lg me-1"></i> Close (X)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <header id="header" class="header d-flex align-items-center fixed-top">
     <div class="container-fluid container-xl position-relative d-flex align-items-center">
 
@@ -86,6 +108,7 @@
           <li><a href="#hero" class="active">Home</a></li>
           <li><a href="#about">About</a></li>
           <li><a href="#resume">Resume</a></li>
+          <li><a href="#internships">Internships</a></li>
           <li><a href="#certificates">Certificates</a></li>
           <li><a href="#portfolio">Projects</a></li>
           <li><a href="#contact">Contact</a></li>
@@ -401,6 +424,57 @@
       </div>
     </section>
 
+    <!-- INTERNSHIPS SECTION -->
+    <section id="internships" class="internships section">
+      <div class="container section-title" data-aos="fade-up">
+        <span class="subtitle">Experience</span>
+        <h2>Internships</h2>
+        <p>My practical industry experience and completion certificates.</p>
+      </div>
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row gy-4 justify-content-center">
+          {% for item in internships %}
+          <div class="col-lg-6">
+            <div class="internship-card">
+              <div class="internship-card-header d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="internship-icon">
+                    <i class="bi bi-briefcase-fill"></i>
+                  </div>
+                  <div>
+                    <h3 class="internship-title mb-1">{{ item.internship_name }}</h3>
+                    <div class="internship-company text-primary fw-semibold">
+                      <i class="bi bi-building me-1"></i>{{ item.company }}
+                    </div>
+                  </div>
+                </div>
+                <span class="badge date-badge ms-auto ms-sm-0">
+                  <i class="bi bi-calendar3 me-1"></i>{{ item.start_date }} - {{ item.end_date }}
+                </span>
+              </div>
+              
+              {% if item.certificate_url %}
+              <div class="internship-card-footer mt-3 pt-3 border-top border-secondary-subtle d-flex justify-content-between align-items-center">
+                <span class="verified-cert-badge"><i class="bi bi-patch-check-fill text-success me-1"></i>Verified Certificate</span>
+                <button type="button" class="btn btn-sm btn-glow-cert" onclick="openCertificateModal('{{ item.certificate_url }}', '{{ item.internship_name }} - Completion Certificate')">
+                  <i class="bi bi-file-earmark-check-fill me-1"></i> View Certificate
+                </button>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <div class="col-12 text-center">
+            <div class="alert alert-light border">
+              <p class="mb-0">No internships added yet. Go to <a href="/admin" target="_blank" rel="noopener noreferrer" class="fw-bold">Admin Panel</a> to add your internship details.</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
     <!-- CERTIFICATES SECTION AS REFRENCED IN image_073ec3.png -->
     <section id="certificates" class="portfolio section light-background">
       <div class="container section-title" data-aos="fade-up">
@@ -600,7 +674,7 @@
     <i class="bi bi-chat-dots-fill"></i>
   </div>
 
-  <div id="chat-window" class="chat-window hidden">
+  <div id="chat-window" class="chat-window hidden" style="display: none;">
     <div class="chat-header">
       <div class="d-flex align-items-center">
         <img src="assets/img/profile/profile.JPG" alt="Bot" class="chat-avatar">
@@ -646,11 +720,46 @@
   <script src="assets/js/main.js"></script>
 
   <script>
+    function openCertificateModal(url, title) {
+      const modalTitle = document.getElementById('certModalTitleText');
+      const modalBody = document.getElementById('certModalBodyContent');
+      const externalBtn = document.getElementById('certModalExternalBtn');
+      
+      if (modalTitle) modalTitle.innerHTML = `<i class="bi bi-patch-check-fill text-success"></i> ${title || 'Certificate Viewer'}`;
+      if (externalBtn) externalBtn.href = url;
+      
+      const cleanUrl = url.toLowerCase();
+      const isPdf = cleanUrl.includes('.pdf') || cleanUrl.includes('/raw/upload/');
+      
+      if (isPdf) {
+        modalBody.innerHTML = `<iframe src="${url}" style="width:100%; height:75vh; border:none; border-radius:12px;"></iframe>`;
+      } else {
+        modalBody.innerHTML = `<img src="${url}" class="img-fluid rounded-3 shadow" style="max-height:75vh; object-fit:contain;" alt="Certificate">`;
+      }
+      
+      const certModal = new bootstrap.Modal(document.getElementById('certificateViewerModal'));
+      certModal.show();
+    }
+
+    function dismissWelcomeModal() {
+      localStorage.setItem('hasSeenWelcomeModal', 'true');
+      sessionStorage.setItem('hasSeenWelcomeModal', 'true');
+    }
+
     window.addEventListener('load', function () {
-      if (!sessionStorage.getItem('hasVisited')) {
-        var myModal = new bootstrap.Modal(document.getElementById('welcomeModal'));
-        myModal.show();
-        sessionStorage.setItem('hasVisited', 'true');
+      if (!localStorage.getItem('hasSeenWelcomeModal') && !sessionStorage.getItem('hasSeenWelcomeModal')) {
+        var welcomeModalEl = document.getElementById('welcomeModal');
+        if (welcomeModalEl) {
+          var myModal = new bootstrap.Modal(welcomeModalEl);
+          myModal.show();
+        }
+      }
+
+      var welcomeModalEl = document.getElementById('welcomeModal');
+      if (welcomeModalEl) {
+        welcomeModalEl.addEventListener('hidden.bs.modal', function () {
+          dismissWelcomeModal();
+        });
       }
     });
   </script>
@@ -693,7 +802,19 @@
   <script>
     function toggleChat() {
       const chatWindow = document.getElementById('chat-window');
-      chatWindow.classList.toggle('hidden');
+      if (chatWindow.classList.contains('hidden')) {
+        chatWindow.style.display = 'flex';
+        requestAnimationFrame(() => {
+          chatWindow.classList.remove('hidden');
+        });
+      } else {
+        chatWindow.classList.add('hidden');
+        setTimeout(() => {
+          if (chatWindow.classList.contains('hidden')) {
+            chatWindow.style.display = 'none';
+          }
+        }, 300);
+      }
     }
 
     function handleKeyPress(event) {
@@ -1038,13 +1159,14 @@
     flex-direction: column;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
   }
 
   .chat-window.hidden {
     opacity: 0;
     transform: translateY(20px);
     pointer-events: none;
+    visibility: hidden;
   }
 
   .chat-header {
